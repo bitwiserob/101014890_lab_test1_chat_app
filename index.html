@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Lab test 1</title>
+  </head>
+  <style>
+    .container {
+      width: 750px;
+      height: 100%;
+
+      display: flex;
+      justify-content: space-between;
+      border: 1px solid black;
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+    }
+    .sub-container {
+      width: 25%;
+      overflow: auto;
+      border: 1px solid rgb(0, 99, 247);
+    }
+
+    ul {
+      min-height: 500px;
+    }
+
+    #messages {
+      list-style-type: none;
+      margin: 0;
+      padding-left: 2px;
+      padding-bottom: 5px;
+    }
+  </style>
+
+  <body>
+    <div class="container">
+      <div class="sub-container">
+        <h4>Room Window</h4>
+        <ul id="rooms"></ul>
+      </div>
+      <div class="sub-container" style="width: 50%">
+        <h4>Chat Window</h4>
+        <ul id="messages"></ul>
+        <form id="form" action="">
+          <input id="input" autocomplete="off" /><button>Send</button>
+        </form>
+      </div>
+
+      <div class="sub-container">
+        <h4>User Window</h4>
+        <ul id="users"></ul>
+      </div>
+    </div>
+    <div id="popup">
+      <form>
+        <label>Username:</label>
+        <input type="text" id="username" required><br><br>
+        <label>Password:</label>
+        <input type="password" id="password" required><br><br>
+        <label>Room:</label>
+        <select id="room">
+          <option value="Covid19">covid19</option>
+          <option value="Nodejs">nodejs</option>
+          <option value="News">news</option>
+        </select><br><br>
+        <button type="submit" id="submit">Join Chat</button>
+      </form>
+    </div>
+
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      document.getElementById("submit").addEventListener("click", function(event) {
+  event.preventDefault();
+
+  var username = document.getElementById("username").value;
+  var password = document.getElementById("password").value;
+  var room = document.getElementById("room").value;
+  var socket = io();
+  socket.emit("join", {username: username, room: room});
+
+  // Hide popup
+  document.getElementById("popup").style.display = "none";
+});
+    </script>
+    
+    
+    <script>
+      var socket = io();
+      var currentRoom = "room1";
+      const defaultRoom = "room1";
+      const username = "anonymous" + Math.floor(Math.random() * 1000);
+      const messages = document.getElementById("messages");
+      const rooms = document.getElementById("rooms");
+      const users = document.getElementById("users");
+      const form = document.getElementById("form");
+      const input = document.getElementById("input");
+      console.log("test");
+
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        if (input.value) {
+          socket.emit("chat message", {
+            msg: input.value,
+            username: username,
+            room: currentRoom,
+          });
+          input.value = "";
+        }
+      });
+
+      socket.on("chat message", function (data) {
+        if (data.room === currentRoom) {
+          let li = document.createElement("li");
+          li.innerHTML = "<strong>" + data.username + ":</strong> " + data.msg;
+          messages.appendChild(li);
+          window.scrollTo(0, document.body.scrollHeight);
+        }
+      });
+
+      socket.on("updateRoomList", function (roomList) {
+        rooms.innerHTML = "";
+        for (let room in roomList) {
+          let li = document.createElement("li");
+          li.innerHTML = room;
+          li.addEventListener("click", function () {
+            currentRoom = room;
+            socket.emit("join", { username: username, room: room });
+          });
+          rooms.appendChild(li);
+        }
+      });
+
+      socket.emit("join", { username: username, room: defaultRoom });
+      socket.on("updateUserList", function (userList) {
+        users.innerHTML = "";
+        for (let user in userList) {
+          let li = document.createElement("li");
+          li.innerHTML = user;
+          users.appendChild(li);
+        }
+      });
+    </script>
+  </body>
+</html>
